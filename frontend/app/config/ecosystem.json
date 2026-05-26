@@ -1,0 +1,128 @@
+[
+  {
+    "slug": "vessel",
+    "name": "The Vessel",
+    "description": "On-chain storage protocol. 10,000 ERC-721 tokens — each is a byte container whose capacity equals its token ID. Capsules overwrite, vaults append, machines delegate.",
+    "category": "protocol",
+    "status": "live",
+    "action": "navigate",
+    "navigateTo": "/",
+    "contracts": [
+      { "address": "0xECb92Cc7112b80A2234936315BbB493fb48d1463", "name": "THE_VESSEL", "chain": "mainnet" },
+      { "address": "0x85c7D2933f178A02Ee9AAC0E654094EaDAca48a2", "name": "RENDERER", "chain": "mainnet" },
+      { "address": "0x48cB121Fa84b7C08692e74872D044B15369977CD", "name": "RELICS", "chain": "mainnet" }
+    ],
+    "urls": [
+      { "label": "evm.now", "href": "https://evm.now/address/0xECb92Cc7112b80A2234936315BbB493fb48d1463" }
+    ],
+    "connections": []
+  },
+  {
+    "slug": "sequences",
+    "name": "Sequences",
+    "description": "ERC-1155 artist edition layer. Each edition has a mint window gated by Vessel block events — editions like \"The Void\" and \"Echo Grid\" live here.",
+    "category": "protocol",
+    "status": "live",
+    "action": "modal",
+    "contracts": [
+      { "address": "0x9423548a957284eD17E55c37c4B6D96e5E63065f", "name": "SEQUENCES", "chain": "mainnet" }
+    ],
+    "urls": [
+      { "label": "evm.now", "href": "https://evm.now/address/0x9423548a957284eD17E55c37c4B6D96e5E63065f" }
+    ],
+    "connections": ["vessel"]
+  },
+  {
+    "slug": "machines",
+    "name": "Machines",
+    "description": "Runtime payload delegation. 1,500 machine-type tokens render through external contracts — Entropy, Router, Hyperportal — instead of stored bytes.",
+    "category": "protocol",
+    "status": "live",
+    "action": "modal",
+    "contracts": [
+      { "address": "0xCC50DeE1e0bd9EC822040bcc3290DAcCadf4f986", "name": "ENTROPY", "chain": "mainnet" },
+      { "address": "0x05680635AeCB8582E7ada2f780e855341B209923", "name": "ROUTER", "chain": "mainnet" },
+      { "address": "0x11929178e085aE64F2bd58168f8cD7B6D7FB7E34", "name": "HYPERPORTAL", "chain": "mainnet" }
+    ],
+    "urls": [
+      { "label": "entropy", "href": "https://evm.now/address/0xCC50DeE1e0bd9EC822040bcc3290DAcCadf4f986" }
+    ],
+    "connections": ["vessel"]
+  },
+  {
+    "slug": "vwu",
+    "name": "VWU",
+    "description": "Vessel World Units. ERC-20 utility token for the Vessel ecosystem.",
+    "category": "token",
+    "status": "live",
+    "action": "navigate",
+    "navigateTo": "https://evm.now/address/0x476072a4E9648C1a115F47F268353586b0012c97",
+    "contracts": [
+      { "address": "0x476072a4E9648C1a115F47F268353586b0012c97", "name": "VWU", "chain": "mainnet" }
+    ],
+    "urls": [
+      { "label": "evm.now", "href": "https://evm.now/address/0x476072a4E9648C1a115F47F268353586b0012c97" }
+    ],
+    "connections": ["vessel"]
+  },
+  {
+    "slug": "diary",
+    "name": "DIARY",
+    "description": "NFT collection with puzzle-gated claims. Token #1 is locked behind a hidden private key derivable from Vessel #2623 on-chain data.",
+    "category": "art",
+    "status": "live",
+    "action": "navigate",
+    "navigateTo": "https://diary.worldcomputer.art/contract",
+    "urls": [
+      { "label": "site", "href": "https://diary.worldcomputer.art/contract" }
+    ],
+    "connections": ["vessel"]
+  },
+  {
+    "slug": "filmstrips",
+    "name": "Filmstrips",
+    "description": "On-chain film frame NFTs. Sequential visual storytelling stored in Vessel vaults.",
+    "category": "art",
+    "status": "live",
+    "action": "modal",
+    "connections": ["vessel"]
+  },
+  {
+    "slug": "pyre",
+    "name": "Pyre",
+    "description": "Burn ritual. Community-driven token burn mechanism.",
+    "category": "community",
+    "status": "live",
+    "action": "navigate",
+    "connections": ["vessel", "vwu"]
+  },
+  {
+    "slug": "vessel-explorer",
+    "name": "Vessel Explorer",
+    "description": "This app. Browse all 10,000 tokens, view on-chain pixel art, inspect vault entries, track ownership and activity.",
+    "category": "tool",
+    "status": "live",
+    "action": "navigate",
+    "navigateTo": "/",
+    "urls": [
+      { "label": "site", "href": "https://vessel-explorer.vercel.app" }
+    ],
+    "connections": ["vessel", "sequences", "machines"]
+  },
+  {
+    "slug": "ethfs",
+    "name": "EthFS",
+    "description": "On-chain file storage. Vessel uses it for the empty-state image and p5.js v1.5.0 fallback.",
+    "category": "protocol",
+    "status": "live",
+    "action": "navigate",
+    "navigateTo": "https://evm.now/address/0xFe1411d6864592549AdE050215482e4385dFa0FB",
+    "contracts": [
+      { "address": "0xFe1411d6864592549AdE050215482e4385dFa0FB", "name": "FileStore", "chain": "mainnet" }
+    ],
+    "urls": [
+      { "label": "evm.now", "href": "https://evm.now/address/0xFe1411d6864592549AdE050215482e4385dFa0FB" }
+    ],
+    "connections": ["vessel"]
+  }
+]

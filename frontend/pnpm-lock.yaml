@@ -17,6 +17,9 @@ importers:
       '@1001-digital/layers.evm':
         specifier: ^1.2.2
         version: 1.2.2(@1001-digital/layers.base@1.2.1(magicast@0.5.2)(vite@7.3.1(@types/node@25.3.5)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))(vue@3.5.29(typescript@5.9.3)))(@1001-digital/styles@1.0.1)(@tanstack/query-core@5.90.20)(@types/react@19.2.14)(@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.14)(ox@0.14.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.47.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)))(bufferutil@4.1.0)(db0@0.3.4)(ioredis@5.10.0)(nuxt@4.3.1(@parcel/watcher@2.5.6)(@types/node@25.3.5)(@vue/compiler-sfc@3.5.29)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4)(idb-keyval@6.2.2)(ioredis@5.10.0)(magicast@0.5.2)(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(vite@7.3.1(@types/node@25.3.5)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))(yaml@2.8.2))(ox@0.14.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(utf-8-validate@6.0.6)(vue@3.5.29(typescript@5.9.3))(zod@3.25.76)
+      '@chenglou/pretext':
+        specifier: 0.0.2
+        version: 0.0.2(typescript@5.9.3)
       '@wagmi/core':
         specifier: ^3.4.0
         version: 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.14)(ox@0.14.0(typescript@5.9.3)(zod@3.25.76))(typescript@5.9.3)(viem@2.47.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))
@@ -217,6 +220,11 @@ packages:
         optional: true
       commander:
         optional: true
+
+  '@chenglou/pretext@0.0.2':
+    resolution: {integrity: sha512-bMPySDxbU1h+qU3D7HzTsz2vhBFIeO19Yp8gsYTJ219tjuX7WFsKJzk2oPVpwxl2P1VEuQGo6whg6Kr8gztphA==}
+    peerDependencies:
+      typescript: ^5
 
   '@clack/core@1.1.0':
     resolution: {integrity: sha512-SVcm4Dqm2ukn64/8Gub2wnlA5nS2iWJyCkdNHcvNHPIeBTGojpdJ+9cZKwLfmqy7irD4N5qLteSilJlE0WLAtA==}
@@ -5312,6 +5320,10 @@ snapshots:
     optionalDependencies:
       cac: 6.7.14
       citty: 0.2.1
+
+  '@chenglou/pretext@0.0.2(typescript@5.9.3)':
+    dependencies:
+      typescript: 5.9.3
 
   '@clack/core@1.1.0':
     dependencies:

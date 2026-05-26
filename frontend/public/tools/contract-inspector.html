@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>contract inspector</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  background: #000;
+  color: #ccc;
+  padding: 1rem;
+  line-height: 1.6;
+}
+h1 { font-size: 14px; font-weight: 700; margin-bottom: 1rem; text-transform: lowercase; }
+.row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; flex-wrap: wrap; }
+input, select {
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+input[type="text"] { flex: 1; min-width: 200px; }
+button {
+  background: #111;
+  border: 1px solid #333;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+button:hover { background: #222; border-color: #555; }
+.output {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.label { color: #666; }
+.addr { color: #60a5fa; }
+.val { color: #4ade80; }
+.err { color: #ef4444; }
+.warn { color: #f59e0b; }
+.section { margin-top: 1.5rem; border-top: 1px solid #222; padding-top: 1rem; }
+.hint { color: #555; font-size: 11px; margin-bottom: 0.5rem; }
+#status { color: #666; margin-bottom: 1rem; }
+.presets { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.presets button { font-size: 11px; padding: 2px 8px; color: #999; }
+</style>
+</head>
+<body>
+<h1>contract inspector</h1>
+<div id="status">checking wallet...</div>
+
+<div class="section">
+  <div class="hint">presets</div>
+  <div class="presets">
+    <button onclick="setContract('0xECb92Cc7112b80A2234936315BbB493fb48d1463')">[vessel]</button>
+    <button onclick="setContract('0x9423548a957284eD17E55c37c4B6D96e5E63065f')">[sequences]</button>
+    <button onclick="setContract('0xa9d1e08c7793af67e9d92fe308d5697fb81d3e43')">[treasury]</button>
+    <button onclick="setContract('0x476072a4E9648C1a115F47F268353586b0012c97')">[vwu]</button>
+    <button onclick="setContract('0xFe1411d6864592549AdE050215482e4385dFa0FB')">[ethfs]</button>
+  </div>
+  <div class="row">
+    <span class="label">contract:</span>
+    <input type="text" id="contract" placeholder="0x..." value="0xa9d1e08c7793af67e9d92fe308d5697fb81d3e43">
+  </div>
+</div>
+
+<div class="section">
+  <div class="hint">raw eth_call — enter function signature + args</div>
+  <div class="row">
+    <span class="label">fn sig:</span>
+    <input type="text" id="fnSig" placeholder="e.g. owner() or balanceOf(address)">
+  </div>
+  <div class="row">
+    <span class="label">args:</span>
+    <input type="text" id="fnArgs" placeholder="comma-separated: 0xaddr, 123, true">
+  </div>
+  <div class="row">
+    <button onclick="callFn()">call</button>
+    <button onclick="decodeFnResult()">decode result</button>
+  </div>
+  <div id="fnOutput" class="output" style="display:none"></div>
+</div>
+
+<div class="section">
+  <div class="hint">read storage slot</div>
+  <div class="row">
+    <span class="label">slot:</span>
+    <input type="text" id="slot" placeholder="0-255 or hex" style="width:100px;flex:none">
+    <button onclick="readSlot()">read</button>
+    <button onclick="scanSlots()">scan 0-20</button>
+  </div>
+  <div id="slotOutput" class="output" style="display:none"></div>
+</div>
+
+<div class="section">
+  <div class="hint">check address role</div>
+  <div class="row">
+    <span class="label">address:</span>
+    <input type="text" id="checkAddr" placeholder="0x...">
+  </div>
+  <div class="row">
+    <button onclick="checkRole('owner')">owner?</button>
+    <button onclick="checkRole('isController')">controller?</button>
+    <button onclick="checkRole('pauser')">pauser?</button>
+    <button onclick="checkRole('balanceOf')">balanceOf</button>
+  </div>
+  <div id="roleOutput" class="output" style="display:none"></div>
+</div>
+
+<div class="section">
+  <div class="hint">batch probe — find which no-arg getters respond</div>
+  <div class="row">
+    <button onclick="probeGetters()">probe common getters</button>
+  </div>
+  <div id="probeOutput" class="output" style="display:none"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// keccak256 — minimal implementation for function selectors
+async function keccak256(data) {
+  // Use SubtleCrypto isn't available for keccak, use ethers-style manual
+  // Actually we'll compute selectors server-side or use a tiny keccak lib
+  // For now, precompute common ones and use raw hex for custom
+  return null;
+}
+
+// Precomputed selectors for common functions
+const SELECTORS = {
+  'owner()': '0x8da5cb5b',
+  'paused()': '0x5c975abb',
+  'pauser()': '0x9fd0506d',
+  'initialized()': '0x158ef93e',
+  'name()': '0x06fdde03',
+  'symbol()': '0x313ce567',
+  'decimals()': '0x313ce567',
+  'totalSupply()': '0x18160ddd',
+  'balanceOf(address)': '0x70a08231',
+  'isController(address)': '0xb429afeb',
+  'vessel()': '0x092ec016',
+  'claimedCount()': '0xc08fa1a4',
+  'claimIsActive()': '0x7a98cdde',
+  'MAX_SUPPLY()': '0x32cb6b0c',
+  'PRICE_PER_UNIT()': '0x4c48e2e4',
+  'tokens(uint256)': '0x4f64b2be',
+  'uri(uint256)': '0x0e89341c',
+  'craftToType(uint256)': '0x5c00b982',
+  'craftToClaimed(uint256)': '0x6d84d1b0',
+  'craftToEntry(uint256)': '0xf5f770d6',
+  'craftToClaimBlock(uint256)': '0x3bb5a867',
+  'craftToPayload(uint256)': '0x2f64d386',
+  'craftToColorMode(uint256)': '0x4c3e1098',
+  'ownerOf(uint256)': '0x6352211e',
+  'readBlockEvents(uint256)': '0x245adbee',
+  'getApproved(uint256)': '0x081812fc',
+  'supportsInterface(bytes4)': '0x01ffc9a7',
+  'lockStart()': '0x6a2f7361',
+  'BLOCKS_PER_DAY()': '0x8734ec7b',
+  'defaultMachine()': '0x4e5dba13',
+};
+
+const COMMON_GETTERS = [
+  'owner()', 'paused()', 'pauser()', 'initialized()', 'name()',
+  'totalSupply()', 'vessel()', 'claimedCount()', 'claimIsActive()',
+  'MAX_SUPPLY()', 'PRICE_PER_UNIT()', 'lockStart()', 'BLOCKS_PER_DAY()',
+  'defaultMachine()',
+];
+
+function pad32(val) {
+  if (typeof val === 'string' && val.startsWith('0x')) {
+    return val.slice(2).toLowerCase().padStart(64, '0');
+  }
+  return BigInt(val).toString(16).padStart(64, '0');
+}
+
+async function ethCall(to, data) {
+  if (!window.ethereum) throw new Error('no wallet');
+  return await window.ethereum.request({
+    method: 'eth_call',
+    params: [{ to, data }, 'latest']
+  });
+}
+
+async function ethStorage(addr, slot) {
+  if (!window.ethereum) throw new Error('no wallet');
+  return await window.ethereum.request({
+    method: 'eth_getStorageAt',
+    params: [addr, slot, 'latest']
+  });
+}
+
+function setContract(addr) {
+  $('contract').value = addr;
+}
+
+function decodeResult(hex) {
+  if (!hex || hex === '0x' || hex === '0x0') return { type: 'empty', display: '(empty)' };
+  const raw = hex.slice(2);
+  if (raw.length === 64) {
+    const val = BigInt('0x' + raw);
+    // Check if address
+    if (raw.slice(0, 24) === '000000000000000000000000' && val > 2n ** 40n) {
+      return { type: 'address', display: '0x' + raw.slice(24), raw: val };
+    }
+    // Check if boolean
+    if (val === 0n) return { type: 'uint', display: '0', raw: 0n };
+    if (val === 1n) return { type: 'bool', display: 'true (1)', raw: 1n };
+    // Number
+    const ethVal = Number(val) / 1e18;
+    let display = val.toString();
+    if (val > 10n ** 15n) display += ` (${ethVal.toFixed(6)} ETH)`;
+    return { type: 'uint', display, raw: val };
+  }
+  // Multi-word — decode each
+  const words = [];
+  for (let i = 0; i < raw.length; i += 64) {
+    words.push(raw.slice(i, i + 64));
+  }
+  return { type: 'multi', words, raw: hex };
+}
+
+function show(id, html) {
+  const el = $(id);
+  el.style.display = '';
+  el.innerHTML = html;
+}
+
+async function callFn() {
+  const contract = $('contract').value.trim();
+  const sig = $('fnSig').value.trim();
+  const argsStr = $('fnArgs').value.trim();
+
+  if (!contract || !sig) return show('fnOutput', '<span class="err">need contract + fn sig</span>');
+
+  // Get selector
+  let selector = SELECTORS[sig];
+  if (!selector) {
+    // Try as raw hex selector
+    if (sig.startsWith('0x') && sig.length === 10) {
+      selector = sig;
+    } else {
+      return show('fnOutput', '<span class="err">unknown function — use raw 0x selector or add to precomputed list</span>');
+    }
+  }
+
+  // Encode args
+  let data = selector;
+  if (argsStr) {
+    const args = argsStr.split(',').map(a => a.trim());
+    for (const arg of args) {
+      data += pad32(arg);
+    }
+  }
+
+  try {
+    const result = await ethCall(contract, data);
+    const decoded = decodeResult(result);
+    let html = `<span class="label">call:</span> ${sig}\n<span class="label">data:</span> ${data}\n<span class="label">raw:</span>  ${result}\n\n`;
+
+    if (decoded.type === 'multi') {
+      html += `<span class="label">decoded (${decoded.words.length} words):</span>\n`;
+      decoded.words.forEach((w, i) => {
+        const val = BigInt('0x' + w);
+        if (w.slice(0, 24) === '000000000000000000000000' && val > 2n ** 40n) {
+          html += `  word ${i}: <span class="addr">0x${w.slice(24)}</span>  (address)\n`;
+        } else {
+          const v = val.toString();
+          // Try ASCII
+          let ascii = '';
+          try {
+            const bytes = [];
+            for (let j = 0; j < w.length; j += 2) {
+              const b = parseInt(w.slice(j, j + 2), 16);
+              if (b >= 32 && b < 127) bytes.push(b);
+            }
+            if (bytes.length > 3) ascii = ` "${String.fromCharCode(...bytes)}"`;
+          } catch(e) {}
+          html += `  word ${i}: <span class="val">${v}</span>${ascii}\n`;
+        }
+      });
+    } else if (decoded.type === 'address') {
+      html += `<span class="label">decoded:</span> <span class="addr">${decoded.display}</span>  (address)`;
+    } else {
+      html += `<span class="label">decoded:</span> <span class="val">${decoded.display}</span>`;
+    }
+    show('fnOutput', html);
+  } catch(e) {
+    show('fnOutput', `<span class="err">error: ${e.message || e}</span>`);
+  }
+}
+
+async function readSlot() {
+  const contract = $('contract').value.trim();
+  let slot = $('slot').value.trim();
+  if (!contract || slot === '') return;
+
+  if (!slot.startsWith('0x')) slot = '0x' + BigInt(slot).toString(16);
+  slot = '0x' + slot.slice(2).padStart(64, '0');
+
+  try {
+    const result = await ethStorage(contract, slot);
+    const decoded = decodeResult(result);
+    let html = `<span class="label">slot ${$('slot').value}:</span> `;
+    if (decoded.type === 'address') html += `<span class="addr">${decoded.display}</span>`;
+    else if (decoded.type === 'empty') html += `<span class="label">(empty)</span>`;
+    else html += `<span class="val">${decoded.display}</span>`;
+    html += `\n<span class="label">raw:</span> ${result}`;
+    show('slotOutput', html);
+  } catch(e) {
+    show('slotOutput', `<span class="err">error: ${e.message}</span>`);
+  }
+}
+
+async function scanSlots() {
+  const contract = $('contract').value.trim();
+  if (!contract) return;
+
+  let html = '';
+  for (let i = 0; i <= 20; i++) {
+    const slot = '0x' + i.toString(16).padStart(64, '0');
+    try {
+      const result = await ethStorage(contract, slot);
+      if (result === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+        html += `<span class="label">slot ${i}: (empty)</span>\n`;
+      } else {
+        const decoded = decodeResult(result);
+        if (decoded.type === 'address') {
+          html += `slot ${i}: <span class="addr">${decoded.display}</span>  (address)\n`;
+        } else {
+          html += `slot ${i}: <span class="val">${decoded.display}</span>\n`;
+        }
+      }
+    } catch(e) {
+      html += `<span class="err">slot ${i}: error</span>\n`;
+    }
+  }
+  show('slotOutput', html);
+}
+
+async function checkRole(fn) {
+  const contract = $('contract').value.trim();
+  const addr = $('checkAddr').value.trim();
+
+  if (fn === 'owner' || fn === 'pauser') {
+    // No-arg getter
+    const sel = SELECTORS[fn + '()'];
+    try {
+      const result = await ethCall(contract, sel);
+      const decoded = decodeResult(result);
+      const matches = addr && decoded.display && decoded.display.toLowerCase() === addr.toLowerCase();
+      let html = `<span class="label">${fn}():</span> <span class="addr">${decoded.display}</span>`;
+      if (addr) html += matches ? ` <span class="val">← MATCH</span>` : ` <span class="warn">← no match</span>`;
+      show('roleOutput', html);
+    } catch(e) {
+      show('roleOutput', `<span class="err">${e.message}</span>`);
+    }
+    return;
+  }
+
+  if (!addr) return show('roleOutput', '<span class="err">enter an address</span>');
+
+  const sel = SELECTORS[fn + '(address)'];
+  if (!sel) return show('roleOutput', '<span class="err">unknown fn</span>');
+
+  try {
+    const result = await ethCall(contract, sel + pad32(addr));
+    const val = BigInt(result);
+    const display = fn === 'balanceOf'
+      ? `${val.toString()} (${(Number(val) / 1e18).toFixed(6)} if 18 decimals)`
+      : (val === 1n ? 'YES' : 'NO');
+    const cls = (fn !== 'balanceOf' && val === 1n) ? 'val' : (fn !== 'balanceOf' ? 'warn' : 'val');
+    show('roleOutput', `<span class="label">${fn}(${addr.slice(0,10)}...):</span> <span class="${cls}">${display}</span>`);
+  } catch(e) {
+    show('roleOutput', `<span class="err">${e.message}</span>`);
+  }
+}
+
+async function probeGetters() {
+  const contract = $('contract').value.trim();
+  if (!contract) return;
+
+  let html = `<span class="label">probing ${contract.slice(0,10)}...</span>\n\n`;
+  show('probeOutput', html);
+
+  for (const fn of COMMON_GETTERS) {
+    const sel = SELECTORS[fn];
+    if (!sel) continue;
+    try {
+      const result = await ethCall(contract, sel);
+      if (result && result !== '0x' && result !== '0x0') {
+        const decoded = decodeResult(result);
+        if (decoded.type === 'address') {
+          html += `<span class="val">✓</span> ${fn}: <span class="addr">${decoded.display}</span>\n`;
+        } else {
+          html += `<span class="val">✓</span> ${fn}: <span class="val">${decoded.display}</span>\n`;
+        }
+      }
+    } catch(e) {
+      // skip — function doesn't exist
+    }
+  }
+  html += `\n<span class="label">done</span>`;
+  show('probeOutput', html);
+}
+
+// Init — check wallet
+(async () => {
+  if (!window.ethereum) {
+    $('status').innerHTML = '<span class="err">no wallet detected — install metamask or similar</span>';
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const chain = await window.ethereum.request({ method: 'eth_chainId' });
+    const chainName = chain === '0x1' ? 'mainnet' : chain === '0xaa36a7' ? 'sepolia' : chain;
+    $('status').innerHTML = `<span class="val">connected:</span> <span class="addr">${accounts[0]}</span> on ${chainName}`;
+  } catch(e) {
+    $('status').innerHTML = `<span class="warn">wallet found but not connected — click to approve</span>`;
+  }
+})();
+</script>
+</body>
+</html>
